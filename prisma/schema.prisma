@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model students {
+  id        Int @id @default(autoincrement())
+  rayon_id  Int
+  rombel_id Int
+
+  name            String @db.VarChar(255)
+  nis             String @db.VarChar(20)
+  status          Status @default(TIDAK_HADIR)
+  whatsapp_number Int
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  rombel rombels @relation(fields: [rombel_id], references: [id])
+
+  rayon          rayons            @relation(fields: [rayon_id], references: [id])
+  attendance     attendances[]
+  not_attendance not_attendances[]
+}
+
+model employee {
+  id       Int  @id @default(autoincrement())
+  role_id  Int
+  rayon_id Int?
+
+  whatsapp_number Int
+  name            String @db.VarChar(255)
+  nip             String @db.VarChar(50)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  rayon          rayons?           @relation(fields: [rayon_id], references: [id])
+  roles          roles             @relation(fields: [role_id], references: [id])
+  not_attendance not_attendances[]
+  attendances    attendances[]
+}
+
+model roles {
+  id Int @id @default(autoincrement())
+
+  name String @db.VarChar(50)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  users    users[]
+  employee employee[]
+}
+
+model users {
+  id      Int @id @default(autoincrement())
+  role_id Int
+
+  username String @db.VarChar(255)
+  password String @db.VarChar(50)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  roles roles @relation(fields: [role_id], references: [id])
+}
+
+model rombels {
+  id       Int @id @default(autoincrement())
+  major_id Int
+
+  rombel String @db.VarChar(50)
+
+  created_at DateTime   @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+  major      majors     @relation(fields: [major_id], references: [id])
+  students   students[]
+}
+
+model rayons {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(50)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  students students[]
+  employee employee[]
+}
+
+model majors {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(50)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  rombel rombels[]
+}
+
+model attendances {
+  id          Int  @id @default(autoincrement())
+  students_id Int?
+  employee_id Int?
+
+  time DateTime
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  empoyee  employee? @relation(fields: [employee_id], references: [id])
+  students students? @relation(fields: [students_id], references: [id])
+}
+
+model not_attendances {
+  id          Int  @id @default(autoincrement())
+  students_id Int?
+  employee_id Int?
+
+  time DateTime
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  employee employee? @relation(fields: [employee_id], references: [id])
+  students students? @relation(fields: [students_id], references: [id])
+}
+
+enum Status {
+  TIDAK_HADIR
+  HADIR
+}

@@ -15,18 +15,18 @@ model students {
   rayon_id  Int
   rombel_id Int
 
-  name            String @db.VarChar(255)
-  nis             String @db.VarChar(20)
-  status          Status @default(TIDAK_HADIR)
-  whatsapp_number Int
+  name            String  @db.VarChar(255)
+  nis             String  @db.VarChar(20)
+  status          Boolean @default(false)
+  whatsapp_number String  @db.VarChar(20)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
   deleted_at DateTime?
 
   rombel rombels @relation(fields: [rombel_id], references: [id])
+  rayon  rayons  @relation(fields: [rayon_id], references: [id])
 
-  rayon          rayons            @relation(fields: [rayon_id], references: [id])
   attendance     attendances[]
   not_attendance not_attendances[]
 }
@@ -36,9 +36,10 @@ model employee {
   role_id  Int
   rayon_id Int?
 
-  whatsapp_number Int
-  name            String @db.VarChar(255)
-  nip             String @db.VarChar(50)
+  whatsapp_number String  @db.VarChar(50)
+  name            String  @db.VarChar(255)
+  nip             String  @db.VarChar(50)
+  status          Boolean @default(false)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
@@ -118,22 +119,8 @@ model attendances {
   students_id Int?
   employee_id Int?
 
-  time DateTime
-
-  created_at DateTime  @default(now())
-  updated_at DateTime?
-  deleted_at DateTime?
-
-  empoyee  employee? @relation(fields: [employee_id], references: [id])
-  students students? @relation(fields: [students_id], references: [id])
-}
-
-model not_attendances {
-  id          Int  @id @default(autoincrement())
-  students_id Int?
-  employee_id Int?
-
-  time DateTime
+  time                 DateTime
+  attendances_evidence String   @db.VarChar(50)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
@@ -143,7 +130,17 @@ model not_attendances {
   students students? @relation(fields: [students_id], references: [id])
 }
 
-enum Status {
-  TIDAK_HADIR
-  HADIR
+model not_attendances {
+  id          Int  @id @default(autoincrement())
+  students_id Int?
+  employee_id Int?
+
+  description String @db.VarChar(255)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  employee employee? @relation(fields: [employee_id], references: [id])
+  students students? @relation(fields: [students_id], references: [id])
 }

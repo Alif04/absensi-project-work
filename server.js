@@ -1,24 +1,30 @@
 const express = require('express');
 const { PrismaClient } = require("@prisma/client");
-
+const attendancesRoutes = require('./src/attendances/routes/attendances.routes');
+const authRoutes = require('./src/auth/routes/user.routes');
 
 const dbService = new PrismaClient();
-const app = express();
-app.use(express.json());
 
-async function run_prisma(){
+const app = express();
+
+app.use(express.json());
+app.use('/auth', authRoutes);
+app.use('/attendance', attendancesRoutes);
+
+// Menggunakan rute yang dilindungi
+async function runPrisma() {
     await dbService.$connect();
     await dbService.$queryRaw`SELECT 1 + 1`;
     await dbService.$disconnect();
-}
-
-run_prisma().catch((error) =>{
-    console.error("Something error when start migrate", error);
+  }
+  
+  runPrisma().catch((error) => {
+    console.error("Terjadi kesalahan saat menjalankan migrasi", error);
     process.exit(1);
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server berjalan pada prot ${PORT}`);
-})
+  });
+  
+  const PORT = 8080;
+  app.listen(PORT, () => {
+    console.log(`Server berjalan pada PORT ${PORT}`);
+  });
 

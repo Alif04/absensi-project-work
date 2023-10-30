@@ -119,8 +119,8 @@ model attendances {
   students_id Int?
   employee_id Int?
 
-  time                 DateTime
-  attendances_evidence String   @db.VarChar(50)
+  time              DateTime
+  evidence_location String   @db.VarChar(50)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
@@ -135,7 +135,8 @@ model not_attendances {
   students_id Int?
   employee_id Int?
 
-  description String @db.VarChar(255)
+  evidence_location String? @db.VarChar(50)
+  description       String? @db.VarChar(255)
 
   created_at DateTime  @default(now())
   updated_at DateTime?

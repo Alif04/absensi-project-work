@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require("@prisma/client");
 const attendancesRoutes = require('./src/attendances/routes/attendances.routes');
 const authRoutes = require('./src/auth/routes/user.routes');
+const notAttendanceRoutes = require('./src/not_attendances/routes/not_attendances.routes');
 
 const dbService = new PrismaClient();
 
@@ -10,6 +11,7 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/attendance', attendancesRoutes);
+app.use('/not_attendance', notAttendanceRoutes);
 
 // Menggunakan rute yang dilindungi
 async function runPrisma() {

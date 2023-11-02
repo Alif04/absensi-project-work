@@ -141,6 +141,122 @@ class NotAttendanceController {
     }
   }
 
+  async getStudentsByRayon(req, res) {
+    try {
+      const { search, date_to, date_from } = req.query;
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      const token_decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      const user = await prisma.users.findFirst({
+        where: {
+          id: token_decoded.user_id,
+          user_rayon: {
+            every: {
+              rayon_id: token_decoded.rayon_id
+            }
+          }
+        },
+        include:{
+          user_rayon: {
+            include: {
+              rayon: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      });
+      const rayon = user.user_rayon[0].rayon.name
+      const students = await prisma.students.findMany({
+        where: {
+          AND: [
+            {
+              status: false,
+              rayon: {
+                name: rayon
+              }
+            },
+            search
+              ? {
+                  OR: [
+                    {
+                      name: {
+                        contains: search,
+                      },
+                    },
+                    {
+                      nis: {
+                        contains: search,
+                      },
+                    },
+                    {
+                      rayon: {
+                        name: {
+                          contains: search,
+                        },
+                      },
+                    },
+                    {
+                      OR: [
+                        {
+                          rombel: {
+                            rombel: {
+                              equals: search,
+                            },
+                          },
+                        },
+                        {
+                          rombel: {
+                            major: {
+                              name: {
+                                contains: search
+                              }
+                            }
+                          }
+                        },
+                      ],
+                    },
+                  ],
+                }
+              : {},
+              date_from && date_to
+              ? {
+                  created_at: {
+                    gte: new Date(`${date_from}T00:00:00.000Z`),
+                    lte: new Date(`${date_to}T23:59:59.000Z`),
+                  },
+                }
+              : {},
+          ],
+        },
+        include: {
+          not_attendance: true,
+          rayon: true,
+          rombel: {
+            include: {
+              major: true,
+            },
+          },
+        },
+      });
+      
+
+      return res.status(200).json({
+        status: 200,
+        message: "Get Data",
+        data: students,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(400).json({
+        status: 400,
+        message: "Error While Get",
+        stack: error,
+      });
+    }
+  }
+
   async getEmployee(req, res) {
     try {
       const { search } = req.query;
@@ -176,6 +292,14 @@ class NotAttendanceController {
                       },
                     },
                   ],
+                }
+              : {},
+              date_from && date_to
+              ? {
+                  created_at: {
+                    gte: new Date(`${date_from}T00:00:00.000Z`),
+                    lte: new Date(`${date_to}T23:59:59.000Z`),
+                  },
                 }
               : {},
             {
@@ -218,6 +342,7 @@ class NotAttendanceController {
         data: {
           description: description,
           evidence_location: image ? image : null,
+          updated_at: new Date()
         },
       });
 
@@ -229,7 +354,7 @@ class NotAttendanceController {
     } catch (error) {
       return res.status(400).json({
         status: 400,
-        message: "Error While Update",
+        message: error.message ?? "Error While Update",
         stack: error,
       });
     }
@@ -241,9 +366,9 @@ cron.schedule("0 13 * * *", function () {
   notAttendanceController.createNotAttendance();
 });
 
-cron.schedule("0 0 * * *", function () {
+cron.schedule("45 10 * * *", function () {
   const notAttendanceController = new NotAttendanceController();
-  notAttendanceController.updateStudentsEmployee;
+  notAttendanceController.updateStudentsEmployee();
 });
 
 module.exports = NotAttendanceController;

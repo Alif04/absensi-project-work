@@ -18,9 +18,10 @@ const upload = multer({ storage: storage });
 const attendancesController = new AttendanceController();
 const middleware = new Middleware();
 
-router.get("/get/student", attendancesController.getStudent);
+router.get("/student", middleware.middlewareKesiswaan ,attendancesController.getStudent);
+router.get("/student/by-rayon", middleware.middlewarePembimbing ,attendancesController.getStudentByRayon);
 router.get(
-  "/get/employee",
+  "/employee",
   middleware.middlewareTU,
   attendancesController.getEmployee
 );
@@ -33,6 +34,7 @@ router.post(
 router.patch(
   "/:id",
   upload.fields([{ name: "image", maxCount: 1 }]),
+  middleware.middlewareKesiswaan && middleware.middlewareTU,
   attendancesController.update
 );
 router.delete("/:id", attendancesController.delete);

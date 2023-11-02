@@ -32,9 +32,8 @@ model students {
 }
 
 model employee {
-  id       Int  @id @default(autoincrement())
-  role_id  Int
-  rayon_id Int?
+  id      Int @id @default(autoincrement())
+  role_id Int
 
   whatsapp_number String  @db.VarChar(50)
   name            String  @db.VarChar(255)
@@ -45,10 +44,10 @@ model employee {
   updated_at DateTime?
   deleted_at DateTime?
 
-  rayon          rayons?           @relation(fields: [rayon_id], references: [id])
   roles          roles             @relation(fields: [role_id], references: [id])
   not_attendance not_attendances[]
   attendances    attendances[]
+  user_employee  user_employee[]
 }
 
 model roles {
@@ -75,7 +74,9 @@ model users {
   updated_at DateTime?
   deleted_at DateTime?
 
-  roles roles @relation(fields: [role_id], references: [id])
+  roles         roles           @relation(fields: [role_id], references: [id])
+  user_rayon    user_rayon[]
+  user_employee user_employee[]
 }
 
 model rombels {
@@ -99,8 +100,8 @@ model rayons {
   updated_at DateTime?
   deleted_at DateTime?
 
-  students students[]
-  employee employee[]
+  students   students[]
+  user_rayon user_rayon[]
 }
 
 model majors {
@@ -144,4 +145,30 @@ model not_attendances {
 
   employee employee? @relation(fields: [employee_id], references: [id])
   students students? @relation(fields: [students_id], references: [id])
+}
+
+model user_rayon {
+  id       Int @id @default(autoincrement())
+  user_id  Int
+  rayon_id Int
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  users users  @relation(fields: [user_id], references: [id])
+  rayon rayons @relation(fields: [rayon_id], references: [id])
+}
+
+model user_employee {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  employee_id Int
+
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+
+  users    users    @relation(fields: [user_id], references: [id])
+  employee employee @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

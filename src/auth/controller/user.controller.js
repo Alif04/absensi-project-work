@@ -14,7 +14,13 @@ class AuthController {
         },
         include: {
           roles: true,
-        },
+          user_rayon: {
+            select: {
+               rayon_id: true,
+               rayon: true
+            }
+          },
+        }
       });
       if (!user) throw new Error("User not found!");
       //FIX WHEN COMPARE USER PASSWORD AND BODY PASSWORD
@@ -22,7 +28,7 @@ class AuthController {
       if (!match_password)
         return res.status(400).json({ error: "Password Incorrect" });
       const token = jwt.sign(
-        { user_id: user.id, user_roles: user.roles.name },
+        { user_id: user.id, user_roles: user.roles.name, rayon_id: user.user_rayon[0].rayon_id },
         process.env.JWT_ACCESS_SECRET,
         {
           expiresIn: "1d",

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient();
-export async function role_seed(){
+export async function RoleSeed() {
+
     await prisma.roles.createMany({
         data: [
             {

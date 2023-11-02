@@ -20,6 +20,12 @@ class AuthController{
             //FIX WHEN COMPARE USER PASSWORD AND BODY PASSWORD
             const match_password = await bcrypt.compare(password, user.password);
             if(!match_password) return res.status(400).json({error: "Password Incorrect"});
+            // FIX WHEN COMPARE USER PASSWORD AND BODY PASSWORD
+            // const match_password =  await bcrypt.compare(password, user.password);
+            // if (!match_password) {
+            //     return res.status(400).json({ error: "Password Incorrect" });
+            // }
+
             const token = jwt.sign({user_id: user.id, user_roles: user.roles.name}, process.env.JWT_ACCESS_SECRET, {
                 expiresIn: '1d'
             });

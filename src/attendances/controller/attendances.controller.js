@@ -7,8 +7,7 @@ const jwt = require("jsonwebtoken");
 class AttendanceController {
   async create(req, res) {
     const { student_id, employee_id, lat, lon } = req.body;
-    if (!req.files || !req.files["image"])
-      throw new Error("File image and file are required");
+    if (!req.files || !req.files["image"]) return res.status(400).json({message: 'File is required'})
     try {
       const image = req.files["image"][0].filename;
       let data;
@@ -58,7 +57,7 @@ class AttendanceController {
         });
       }
 
-      await prisma.attendances.create({
+       await prisma.attendances.create({
         data,
         include: {
           employee: employee_id ? true : false,

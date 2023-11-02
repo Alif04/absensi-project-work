@@ -148,15 +148,15 @@ model not_attendances {
 }
 
 model user_rayon {
-  id       Int @id @default(autoincrement())
-  user_id  Int
+  id       Int  @id @default(autoincrement())
+  user_id  Int?
   rayon_id Int
 
   created_at DateTime  @default(now())
   updated_at DateTime?
   deleted_at DateTime?
 
-  users users  @relation(fields: [user_id], references: [id])
+  users users? @relation(fields: [user_id], references: [id])
   rayon rayons @relation(fields: [rayon_id], references: [id])
 }
 

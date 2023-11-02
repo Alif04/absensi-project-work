@@ -6,6 +6,7 @@ import { RayonSeed } from "./rayon.seed";
 import { MajorSeed } from "./major.seed";
 import { RombelSeed } from "./rombel.seed";
 import { EmployeeSeed } from "./employee.seed";
+import { StudentSeed } from "./students.seed";
 const prisma = new PrismaClient();
 async function main() {
   // await RoleSeed();
@@ -13,8 +14,8 @@ async function main() {
   //   await UsersSeed();
   //   await MajorSeed();
   //   await RombelSeed();
-  await EmployeeSeed();
-  //
+  //   await EmployeeSeed();
+  await StudentSeed();
 }
 
 main()

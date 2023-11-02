@@ -1,6 +1,8 @@
 const { PrismaClient } = require("@prisma/client");
 const { insideCircle } = require("geolocation-utils");
 const prisma = new PrismaClient();
+const jwt = require("jsonwebtoken");
+
 
 class AttendanceController {
   async create(req, res) {

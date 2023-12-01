@@ -110,6 +110,8 @@ export default class AttendanceController {
     }
   }
 
+  //TODO: EXPORT EXCEL AFTER GETSTUDENT
+
   async getStudent(req, res) {
     try {
       const { search, date_to, take = 10, page = 1, date_from, status, rayon } = req.query;

@@ -1,92 +1,76 @@
 const { PrismaClient } = require("@prisma/client");
-const { insideCircle } = require("geolocation-utils");
-const prisma = new PrismaClient();
+const cron = require("node-cron");
 const jwt = require("jsonwebtoken");
 
 
-class AttendanceController {
-  async create(req, res) {
-    const { student_id, employee_id, lat, lon } = req.body;
-    if (!req.files || !req.files["image"]) return res.status(400).json({message: 'File is required'})
+const prisma = new PrismaClient();
+
+class NotAttendanceController {
+  async createNotAttendance() {
     try {
-      const image = req.files["image"][0].filename;
-      let data;
-      const radius = 100;
-      const lat1 = -6.6449872;
-      const lon1 = 106.8429252;
-      const location1 = { lat: Number(lat), lon: Number(lon) };
-      const location2 = { lat: lat1, lon: lon1 };
-      const circle = insideCircle(location2, location1, radius);
-      if (!circle) throw new Error("Location Invalid");
-      if (student_id) {
-        data = {
-          students: {
-            connect: {
-              id: Number(student_id),
-            },
-          },
-          time: new Date(),
-          evidence_location: image,
-        };
-
-        await prisma.students.update({
-          where: {
-            id: Number(student_id),
-          },
-          data: {
-            status: true,
-          },
-        });
-      } else if (employee_id) {
-        data = {
-          employee: {
-            connect: {
-              id: Number(employee_id),
-            },
-          },
-          evidence_location: image,
-          time: new Date(),
-        };
-        await prisma.employee.update({
-          where: {
-            id: Number(employee_id),
-          },
-          data: {
-            status: true,
-          },
-        });
-      }
-
-       await prisma.attendances.create({
-        data,
-        include: {
-          employee: employee_id ? true : false,
-          students: student_id ? true : false,
+      const student = await prisma.students.findMany({
+        where: {
+          status: false,
         },
       });
 
-      // TODO: SEND WHATSAPP MESSAGE AFTER ATTENDANCES
-
-      return res.status(201).json({
-        status: 201,
-        message: "Attendances created",
+      const employee = await prisma.employee.findMany({
+        where: {
+          status: false,
+        },
       });
+
+      let dataToCreate = [];
+
+      if (Math.random() < 0.5 && student.length > 0) {
+        dataToCreate = student.map((s) => ({ students_id: s.id }));
+      } else if (employee.length > 0) {
+        dataToCreate = employee.map((e) => ({ employee_id: e.id }));
+      }
+
+      await prisma.not_attendances.createMany({
+        data: dataToCreate,
+      });
+      return console.log("Success Create Not Attendances");
     } catch (error) {
       console.log(error);
-      return res.status(400).json({
-        status: 400,
-        message: error.message ?? "Error While Create",
-        stack: error,
-      });
     }
   }
 
-  async getStudent(req, res) {
+  async updateStudentsEmployee() {
     try {
-      const { search, date_to, date_from } = req.query;
+      await prisma.students.updateMany({
+        where: {
+          status: false,
+        },
+        data: {
+          status: true,
+        },
+      });
+      await prisma.employee.updateMany({
+        where: {
+          status: false,
+        },
+        data: {
+          status: true,
+        },
+      });
+
+      console.log("Success Update Status");
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getStudents(req, res) {
+    try {
+      const { search } = req.query;
       const students = await prisma.students.findMany({
         where: {
           AND: [
+            {
+              status: false,
+            },
             search
               ? {
                   OR: [
@@ -120,31 +104,20 @@ class AttendanceController {
                           rombel: {
                             major: {
                               name: {
-                                contains: search,
-                              },
-                            },
-                          },
+                                contains: search
+                              }
+                            }
+                          }
                         },
                       ],
                     },
                   ],
                 }
               : {},
-            date_from && date_to
-              ? {
-                  created_at: {
-                    gte: new Date(`${date_from}T00:00:00.000Z`),
-                    lte: new Date(`${date_to}T23:59:59.000Z`),
-                  },
-                }
-              : {},
-            {
-              status: true,
-            },
           ],
         },
         include: {
-          attendance: true,
+          not_attendance: true,
           rayon: true,
           rombel: {
             include: {
@@ -153,10 +126,11 @@ class AttendanceController {
           },
         },
       });
+      
 
       return res.status(200).json({
         status: 200,
-        message: "Get Attendances",
+        message: "Get Data",
         data: students,
       });
     } catch (error) {
@@ -169,16 +143,42 @@ class AttendanceController {
     }
   }
 
-  async getStudentByRayon(req, res) {
+  async getStudentsByRayon(req, res) {
     try {
-      const {rayon} = req.query;
       const { search, date_to, date_from } = req.query;
       const token = req.header("Authorization")?.replace("Bearer ", "");
       const token_decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-
+      const user = await prisma.users.findFirst({
+        where: {
+          id: token_decoded.user_id,
+          user_rayon: {
+            every: {
+              rayon_id: token_decoded.rayon_id
+            }
+          }
+        },
+        include:{
+          user_rayon: {
+            include: {
+              rayon: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      });
+      const rayon = user.user_rayon[0].rayon.name
       const students = await prisma.students.findMany({
         where: {
           AND: [
+            {
+              status: false,
+              rayon: {
+                name: rayon
+              }
+            },
             search
               ? {
                   OR: [
@@ -190,6 +190,13 @@ class AttendanceController {
                     {
                       nis: {
                         contains: search,
+                      },
+                    },
+                    {
+                      rayon: {
+                        name: {
+                          contains: search,
+                        },
                       },
                     },
                     {
@@ -205,17 +212,17 @@ class AttendanceController {
                           rombel: {
                             major: {
                               name: {
-                                contains: search,
-                              },
-                            },
-                          },
+                                contains: search
+                              }
+                            }
+                          }
                         },
                       ],
                     },
                   ],
                 }
               : {},
-            date_from && date_to
+              date_from && date_to
               ? {
                   created_at: {
                     gte: new Date(`${date_from}T00:00:00.000Z`),
@@ -223,14 +230,10 @@ class AttendanceController {
                   },
                 }
               : {},
-            {
-              status: true,
-              rayon_id: token_decoded.rayon_id
-            },
           ],
         },
         include: {
-          attendance: true,
+          not_attendance: true,
           rayon: true,
           rombel: {
             include: {
@@ -239,10 +242,11 @@ class AttendanceController {
           },
         },
       });
+      
 
       return res.status(200).json({
         status: 200,
-        message: "Get Attendances",
+        message: "Get Data",
         data: students,
       });
     } catch (error) {
@@ -254,7 +258,6 @@ class AttendanceController {
       });
     }
   }
-
 
   async getEmployee(req, res) {
     try {
@@ -293,13 +296,21 @@ class AttendanceController {
                   ],
                 }
               : {},
+              date_from && date_to
+              ? {
+                  created_at: {
+                    gte: new Date(`${date_from}T00:00:00.000Z`),
+                    lte: new Date(`${date_to}T23:59:59.000Z`),
+                  },
+                }
+              : {},
             {
-              status: true,
+              status: false,
             },
           ],
         },
         include: {
-          attendances: true,
+          not_attendance: true,
           rayon: true,
           roles: true,
         },
@@ -307,7 +318,7 @@ class AttendanceController {
 
       return res.status(200).json({
         status: 200,
-        message: "Get Attendances",
+        message: "Get Data",
         data: employee,
       });
     } catch (error) {
@@ -321,79 +332,45 @@ class AttendanceController {
   }
 
   async update(req, res) {
+    if (!req.files || !req.files["image"]) throw new Error("File is required");
     try {
-      const { id } = req.params.id;
-      const { student_id, employee_id } = req.body;
-      if (!req.files || !req.files["image"])
-        throw new Error("Image is required");
-      const image = req.files["image"][0].filename;
-      let data;
-      if (student_id) {
-        data = {
-          students: {
-            connect: {
-              id: student_id,
-            },
-          },
-          time: new Date(),
-          evidence_location: image,
-        };
-      } else if (employee_id) {
-        data = {
-          employee: {
-            connect: {
-              id: employee_id,
-            },
-          },
-          evidence_location: image,
-          time: new Date(),
-        };
-      }
-
-      await prisma.attendances.update({
+      const { id } = req.params;
+      const { description } = req.body;
+      const image = req.files["images"][0].filename;
+      const not_attendance = await prisma.not_attendances.update({
         where: {
           id,
         },
-        data,
-        include: {
-          employee: employee_id ? true : false,
-          students: student_id ? true : false,
-        },
-      });
-      return res.status(200).json({
-        status: 200,
-        message: "Attendances updated",
-      });
-    } catch (error) {
-      return res.status(400).json({
-        status: 400,
-        message: "Error While Update",
-        stack: error,
-      });
-    }
-  }
-
-  async delete(req, res) {
-    try {
-      const { id } = req.params.id;
-      const attendance = await prisma.attendances.delete({
-        where: {
-          id,
+        data: {
+          description: description,
+          evidence_location: image ? image : null,
+          updated_at: new Date()
         },
       });
 
       return res.status(200).json({
         status: 200,
-        message: "Attendance Deleted",
+        message: "Update Success",
+        data: not_attendance,
       });
     } catch (error) {
       return res.status(400).json({
         status: 400,
-        message: "Error While Update",
+        message: error.message ?? "Error While Update",
         stack: error,
       });
     }
   }
 }
 
-module.exports = AttendanceController;
+cron.schedule("0 13 * * *", function () {
+  const notAttendanceController = new NotAttendanceController();
+  notAttendanceController.createNotAttendance();
+});
+
+cron.schedule("45 10 * * *", function () {
+  const notAttendanceController = new NotAttendanceController();
+  notAttendanceController.updateStudentsEmployee();
+});
+
+module.exports = NotAttendanceController;

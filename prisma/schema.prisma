@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlserver"
+  url      = env("MSSQL_URL")
 }
 
 model students {
@@ -15,16 +15,17 @@ model students {
   rayon_id  Int
   rombel_id Int
 
-  name            String  @db.VarChar(255)
-  nis             String  @db.VarChar(20)
-  status          Boolean @default(false)
-  whatsapp_number String  @db.VarChar(20)
+  name            String @db.VarChar(255)
+  nis             String @db.VarChar(20)
+  status_id       Int
+  whatsapp_number String @db.VarChar(20)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
   deleted_at DateTime?
 
   rombel rombels @relation(fields: [rombel_id], references: [id])
+  status status  @relation(fields: [status_id], references: [id])
   rayon  rayons  @relation(fields: [rayon_id], references: [id])
 
   attendance     attendances[]
@@ -32,19 +33,21 @@ model students {
 }
 
 model employee {
-  id      Int @id @default(autoincrement())
-  role_id Int
+  id        Int @id @default(autoincrement())
+  status_id Int
+  role_id   Int
 
-  whatsapp_number String  @db.VarChar(50)
-  name            String  @db.VarChar(255)
-  nip             String  @db.VarChar(50)
-  status          Boolean @default(false)
+  whatsapp_number String @db.VarChar(50)
+  name            String @db.VarChar(255)
+  nip             String @db.VarChar(50)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
   deleted_at DateTime?
 
-  roles          roles             @relation(fields: [role_id], references: [id])
+  roles  roles  @relation(fields: [role_id], references: [id])
+  status status @relation(fields: [status_id], references: [id])
+
   not_attendance not_attendances[]
   attendances    attendances[]
   user_employee  user_employee[]
@@ -68,7 +71,7 @@ model users {
   role_id Int
 
   username String @db.VarChar(255)
-  password String @db.VarChar(50)
+  password String @db.VarChar(255)
 
   created_at DateTime  @default(now())
   updated_at DateTime?
@@ -127,7 +130,7 @@ model attendances {
   updated_at DateTime?
   deleted_at DateTime?
 
-  employee employee? @relation(fields: [employee_id], references: [id])
+  employee employee? @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   students students? @relation(fields: [students_id], references: [id])
 }
 
@@ -143,7 +146,7 @@ model not_attendances {
   updated_at DateTime?
   deleted_at DateTime?
 
-  employee employee? @relation(fields: [employee_id], references: [id])
+  employee employee? @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   students students? @relation(fields: [students_id], references: [id])
 }
 
@@ -171,4 +174,15 @@ model user_employee {
 
   users    users    @relation(fields: [user_id], references: [id])
   employee employee @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model status {
+  id     Int    @id @default(autoincrement())
+  status String @db.VarChar(50)
+
+  created_at DateTime   @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+  employee   employee[]
+  students   students[]
 }

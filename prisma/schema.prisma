@@ -71,7 +71,7 @@ model users {
   role_id Int
 
   username String @db.VarChar(255)
-  password String @db.VarChar(50)
+  password String @db.VarChar(255)
 
   created_at DateTime  @default(now())
   updated_at DateTime?

@@ -3,11 +3,12 @@ import { PrismaClient } from "@prisma/client";
 import attendancesRoutes from "./src/attendances/routes/attendances.routes";
 import authRoutes from "./src/auth/routes/user.routes";
 import notAttendanceRoutes from "./src/not_attendances/routes/not_attendances.routes";
+var cors = require('cors');
 
 const dbService = new PrismaClient();
 
 const app = express();
-
+app.use(cors())
 app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/attendance", attendancesRoutes);
@@ -26,6 +27,9 @@ runPrisma().catch((error) => {
 });
 
 const PORT = 8080;
-app.listen(PORT, () => {
-  console.log(`Server berjalan pada PORT ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server berjalan pada PORT ${PORT}`);
+// });
+app.listen(80, function () {
+  console.log('CORS-enabled web server listening on port 80')
+})

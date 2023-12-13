@@ -1,10 +1,53 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { userInfo } from "os";
+import exceljs from 'exceljs'
+import moment from 'moment'
 const { insideCircle } = require("geolocation-utils");
 const jwt = require("jsonwebtoken");
 const dbService = new PrismaClient();
 
 export default class AttendanceController {
+  constructor() {
+    this.importExcel = this.importExcel.bind(this);
+  }
+
+  async importExcel(req, res) {
+    try {
+      const { search, take = 10, page = 1, status, date_from, date_to } = req.query;
+      const student = await this.getStudent(req, res);
+      console.log(student);
+
+
+      const excel = new exceljs.Workbook();
+      const newExcel = excel.addWorksheet('Attendance Sheet');
+      newExcel.addRow([
+        "Name",
+        "Nis",
+        "Status",
+        "Jam Kehadiran"
+      ]);
+
+      student.data.forEach((item) => {
+        newExcel.addRow([
+          item.name,
+          item.nis,
+          item.status.status,
+          item.attendance[0]?.time ?? 'tidak ada absen'
+        ]);
+      });
+
+      // Mengirim file Excel sebagai respons HTTP
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=attendance.xlsx');
+      const buffer = await excel.xlsx.writeBuffer();
+      return res.send(buffer);
+
+    } catch (error) {
+      console.log(error);
+      return "ERROR";
+    }
+  }
+
   async create(req, res) {
     const { nip, nis, lat, lon } = req.body;
     if (!req.files || !req.files["image"])
@@ -19,6 +62,7 @@ export default class AttendanceController {
       const location1 = { lat: Number(lat), lon: Number(lon) };
       const location2 = { lat: lat1, lon: lon1 };
       const circle = insideCircle(location2, location1, radius);
+      const now = new Date();
       if (!circle) throw new Error("Location Invalid");
       const status = await dbService.status.findFirst({
         where: {
@@ -39,7 +83,7 @@ export default class AttendanceController {
               id: students?.id,
             },
           },
-          time: new Date(),
+          time: moment(now).format("DD-MM-YYYY-HH:mm:ss"),
           evidence_location: image,
         };
 
@@ -118,77 +162,63 @@ export default class AttendanceController {
       const skip = +page * +take - +take;
       const userRayon = await dbService.rayons.findFirst({
         where: {
-          id: req.user.user_rayon.rayon_id ?? undefined
+          id: req.user.user_rayon.rayon_id ?? 0
         }
       })
       // console.log("USER RAYON", userRayon);
 
-      const students = await dbService.students.findMany({
-        where: {
-          AND: [
-            search
-              ? {
-                OR: [
-                  {
-                    name: {
-                      contains: search,
-                    },
-                  },
-                  {
-                    nis: {
-                      contains: search,
-                    },
-                  },
-                  {
-                    rayon: {
-                      name: {
-                        contains: rayon,
-                      },
-                    },
-                  },
-                  {
-                    OR: [
-                      {
-                        rombel: {
-                          rombel: {
-                            equals: search,
-                          },
-                        },
-                      },
-                      {
-                        rombel: {
-                          major: {
-                            name: {
-                              contains: search,
-                            },
-                          },
-                        },
-                      },
-                    ],
-                  },
-                ],
-              }
-              : {},
-            date_from && date_to
-              ? {
-                created_at: {
-                  gte: new Date(`${date_from}T00:00:00.000Z`),
-                  lte: new Date(`${date_to}T23:59:59.000Z`),
+      const where: Prisma.studentsWhereInput = {
+        AND: [
+          search
+            ? {
+              OR: [
+                { name: { contains: search } },
+                { nis: { contains: search } },
+                // { rayon: { name: { contains: rayon } } },
+                {
+                  OR: [
+                    { rombel: { rombel: { contains: search } } },
+                    { rombel: { major: { name: { contains: search } } } },
+                  ],
                 },
-              }
-              : {},
-            {
+              ],
+            }
+            : undefined,
+          date_from && date_to
+            ? {
+              created_at: {
+                gte: new Date(`${date_from}T00:00:00.000Z`),
+                lte: new Date(`${date_to}T23:59:59.000Z`),
+              },
+            }
+            : undefined,
+          status
+            ? {
               status: {
                 status: {
-                  contains: status,
+                  contains: status
                 },
               },
-            },
-            {
-              rayon_id: userRayon?.id
             }
-          ],
-        },
+            : undefined,
+          rayon
+            ? {
+              rayon: {
+                name: {
+                  contains: rayon
+                }
+              }
+            } : undefined,
+          userRayon?.id
+            ? {
+              rayon_id: userRayon.id,
+            }
+            : undefined,
+        ].filter(Boolean),
+      };
+
+      const students = await dbService.students.findMany({
+        where,
         orderBy: {
           created_at: 'desc'
         },
@@ -197,6 +227,7 @@ export default class AttendanceController {
         include: {
           attendance: true,
           rayon: true,
+          status: true,
           rombel: {
             include: {
               major: true,
@@ -205,14 +236,14 @@ export default class AttendanceController {
         },
       });
 
-      return res.status(200).json({
+      return {
         status: 200,
         message: "Get Attendances",
         data: students,
         skip,
         page,
-        take
-      });
+        take: Math.max(+take, 0)  // Perubahan di sini
+      };
     } catch (error) {
       console.log(error);
       return res.status(400).json({
@@ -229,68 +260,40 @@ export default class AttendanceController {
       const skip = +page * +take - +take;
       console.log("SKIPPPPS", take, page, skip);
 
-      const employee = await dbService.employee.findMany({
-        where: {
-          AND: [
-            search
-              ? {
-                OR: [
-                  {
-                    name: {
-                      contains: search,
-                    },
-                  },
-                  {
-                    nip: {
-                      contains: search,
-                    },
-                  },
-                  {
-                    user_employee: {
-                      every: {
-                        users: {
-                          user_rayon: {
-                            every: {
-                              rayon: {
-                                name: {
-                                  contains: search,
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                  {
-                    roles: {
-                      name: {
-                        contains: search,
-                      },
-                    },
-                  },
-                ],
-              }
-              : {},
-            date_from && date_to
-              ? {
-                created_at: {
-                  gte: new Date(`${date_from}T00:00:00.000Z`),
-                  lte: new Date(`${date_to}T23:59:59.000Z`),
-                },
-              }
-              : {},
-
-            {
+      const where: Prisma.employeeWhereInput = {
+        AND: [
+          search
+            ? {
+              OR: [
+                { name: { contains: search } },
+                { nip: { contains: search } },
+                // { rayon: { name: { contains: rayon } } },
+                { roles: { name: { contains: search } } }
+              ],
+            }
+            : undefined,
+          date_from && date_to
+            ? {
+              created_at: {
+                gte: new Date(`${date_from}T00:00:00.000Z`),
+                lte: new Date(`${date_to}T23:59:59.000Z`),
+              },
+            }
+            : undefined,
+          status
+            ? {
               status: {
                 status: {
-                  contains: status,
+                  contains: status
                 },
               },
-            },
-          ],
+            }
+            : undefined,
+        ].filter(Boolean),
+      };
 
-        },
+      const employee = await dbService.employee.findMany({
+        where,
         orderBy: {
           created_at: 'desc'
         },

@@ -26,10 +26,10 @@ runPrisma().catch((error) => {
   process.exit(1);
 });
 
-const PORT = 8080;
+// const PORT = 8080;
 // app.listen(PORT, () => {
 //   console.log(`Server berjalan pada PORT ${PORT}`);
 // });
-app.listen(80, function () {
-  console.log('CORS-enabled web server listening on port 80')
+app.listen(7070, function () {
+  console.log('CORS-enabled web server listening on port 70')
 })

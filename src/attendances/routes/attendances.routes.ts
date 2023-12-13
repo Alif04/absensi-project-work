@@ -24,6 +24,7 @@ router.post(
   middleware,
   attendancesController.create
 );
+router.get("/import-excel", middleware, attendancesController.importExcel);
 router.patch(
   "/:id",
   upload.fields([{ name: "image", maxCount: 1 }]),

@@ -15,7 +15,7 @@ export default class AttendanceController {
     try {
       const { search, take = 10, page = 1, status, date_from, date_to } = req.query;
       const student = await this.getStudent(req, res);
-      console.log(student);
+      console.log();
 
 
       const excel = new exceljs.Workbook();
@@ -155,7 +155,6 @@ export default class AttendanceController {
   }
 
   //TODO: EXPORT EXCEL AFTER GETSTUDENT
-
   async getStudent(req, res) {
     try {
       const { search, date_to, take = 10, page = 1, date_from, status, rayon } = req.query;
@@ -192,15 +191,21 @@ export default class AttendanceController {
               },
             }
             : undefined,
-          status
+          status === 'tidakhadir'
             ? {
+              status: {
+                status: {
+                  in: ['alpa', 'sakit', 'izin']
+                }
+              }
+            }
+            : {
               status: {
                 status: {
                   contains: status
                 },
               },
-            }
-            : undefined,
+            },
           rayon
             ? {
               rayon: {
@@ -225,7 +230,11 @@ export default class AttendanceController {
         take: +take <= 0 ? undefined : +take,
         skip,
         include: {
-          attendance: true,
+          attendance: {
+            orderBy: {
+              created_at: 'desc'
+            }
+          },
           rayon: true,
           status: true,
           rombel: {
@@ -236,14 +245,17 @@ export default class AttendanceController {
         },
       });
 
-      return {
+      console.log(students);
+
+
+      return res.json({
         status: 200,
         message: "Get Attendances",
         data: students,
         skip,
         page,
         take: Math.max(+take, 0)  // Perubahan di sini
-      };
+      });
     } catch (error) {
       console.log(error);
       return res.status(400).json({

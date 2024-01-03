@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import attendancesRoutes from "./src/attendances/routes/attendances.routes";
 import authRoutes from "./src/auth/routes/user.routes";
 import notAttendanceRoutes from "./src/not_attendances/routes/not_attendances.routes";
+import dummyRoutes from "./src/dummy/routes/dummy.routes"
 var cors = require('cors');
 
 const dbService = new PrismaClient();
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/attendance", attendancesRoutes);
 app.use("/not_attendance", notAttendanceRoutes);
+app.use("/dummy", dummyRoutes);
 
 // Menggunakan rute yang dilindungi
 async function runPrisma() {

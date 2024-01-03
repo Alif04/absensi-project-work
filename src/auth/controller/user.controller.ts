@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { hash } from "bcrypt";
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const dbService = new PrismaClient();
+const prisma = new PrismaClient();
 
 export default class AuthController {
   async login(req, res) {
@@ -10,7 +11,7 @@ export default class AuthController {
       const { username, password } = req.body;
       if (!username || !password) throw new Error("Missing Data");
 
-      const usersWithUserRayon = await dbService.users.findMany({
+      const usersWithUserRayon = await prisma.users.findMany({
         where: {
           NOT: {
             user_rayon: undefined,
@@ -28,7 +29,7 @@ export default class AuthController {
         },
       });
 
-      const usersWithoutUserRayon = await dbService.users.findMany({
+      const usersWithoutUserRayon = await prisma.users.findMany({
         where: {
           user_rayon: {
             every: {
@@ -82,6 +83,46 @@ export default class AuthController {
         message: "Login Success",
         token,
         user,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        stack: error,
+      });
+    }
+  }
+
+  async register(req, res) {
+    try {
+      const { username, password, role_id } = req.body;
+      if (!username || !password) throw new Error("Missing Data");
+      const role = await prisma.roles.findFirst({
+        where: {
+          id: role_id
+        }
+      });
+
+      if (!role) throw new Error('Role not found!');
+
+      const users = await prisma.users.create({
+        data: {
+          username,
+          password: await hash(password, 12),
+          roles: {
+            connect: {
+              id: role.id
+            }
+          }
+        }
+      });
+
+
+      return res.status(200).json({
+        status: 200,
+        message: "Register Success",
+        user: users,
       });
     } catch (error) {
       console.log(error);

@@ -56,7 +56,7 @@ export default class NotAttendanceController {
       const status = await dbService.status.findFirst({
         where: {
           status: {
-            contains: "hadir",
+            contains: "alpa",
           },
         },
       });
@@ -65,7 +65,7 @@ export default class NotAttendanceController {
           where: {
             status: {
               status: {
-                contains: "alpa",
+                contains: "hadir",
               },
             },
           },
@@ -77,7 +77,7 @@ export default class NotAttendanceController {
           where: {
             status: {
               status: {
-                contains: "alpa",
+                contains: "hadir",
               },
             },
           },
@@ -176,7 +176,7 @@ cron.schedule("0 13 * * *", function () {
   notAttendanceController.createNotAttendance();
 });
 
-cron.schedule("45 10 * * *", function () {
+cron.schedule("45 13 * * *", function () {
   const notAttendanceController = new NotAttendanceController();
   notAttendanceController.updateStudentsEmployee();
 });

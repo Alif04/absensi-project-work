@@ -6,7 +6,7 @@ import middleware from "../../middleware/middleware";
 const router = express.Router();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "src/images/attendances");
+    cb(null, "src/images/not_attendances");
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + "." + mime.extension(file.mimetype));
@@ -21,12 +21,12 @@ router.get("/employee", middleware, attendancesController.getEmployee);
 router.post(
   "/",
   upload.fields([{ name: "image", maxCount: 1 }]),
-  middleware,
+  // middleware,
   attendancesController.create
 );
 router.patch(
   "/:id",
-  upload.fields([{ name: "image", maxCount: 1 }]),
+  // upload.fields([{ name: "image", maxCount: 1 }]),
   middleware,
   attendancesController.update
 );

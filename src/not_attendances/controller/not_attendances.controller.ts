@@ -1,10 +1,7 @@
-import { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client"
+import cron from "node-cron"
 
-import { PrismaClient } from "@prisma/client";
-import cron from "node-cron";
-import jwt from "jsonwebtoken";
-
-const dbService = new PrismaClient();
+const dbService = new PrismaClient()
 
 export default class NotAttendanceController {
   async createNotAttendance() {
@@ -17,7 +14,7 @@ export default class NotAttendanceController {
             },
           },
         },
-      });
+      })
 
       const employee = await dbService.employee.findMany({
         where: {
@@ -27,27 +24,27 @@ export default class NotAttendanceController {
             },
           },
         },
-      });
+      })
 
-      let dataToCreate = [];
+      let dataToCreate = []
 
       if (Math.random() < 0.5 && student.length > 0) {
-        dataToCreate = student.map((s) => ({ students_id: s.id }));
+        dataToCreate = student.map((s) => ({ students_id: s.id }))
       } else if (employee.length > 0) {
-        dataToCreate = employee.map((e) => ({ employee_id: e.id }));
+        dataToCreate = employee.map((e) => ({ employee_id: e.id }))
       }
 
       const [notAttendances] = await dbService.$transaction([
         dbService.not_attendances.createMany({
           data: dataToCreate,
         }),
-      ]);
+      ])
       return console.log({
         data: notAttendances,
         message: "Successfully Create",
-      });
+      })
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   }
 
@@ -56,16 +53,16 @@ export default class NotAttendanceController {
       const status = await dbService.status.findFirst({
         where: {
           status: {
-            contains: "hadir",
+            contains: "alpa",
           },
         },
-      });
+      })
       const [students, employee] = await dbService.$transaction([
         dbService.students.updateMany({
           where: {
             status: {
               status: {
-                contains: "alpa",
+                contains: "hadir",
               },
             },
           },
@@ -77,7 +74,7 @@ export default class NotAttendanceController {
           where: {
             status: {
               status: {
-                contains: "alpa",
+                contains: "hadir",
               },
             },
           },
@@ -85,39 +82,112 @@ export default class NotAttendanceController {
             status_id: status.id,
           },
         }),
-      ]);
+      ])
 
       return console.log({
         data: { students, employee },
         message: "Success Update",
-      });
+      })
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   }
 
+  // async update(req, res) {
+  //   try {
+  //     const { id } = req.params
+  //     const { description, status } = req.body
+  //     const getAttendances = await dbService.not_attendances.findFirst({
+  //       where: {
+  //         id: parseInt(id),
+  //       },
+  //       include: {
+  //         employee: true,
+  //         students: true,
+  //       },
+  //     })
+  //     const getStatus = await dbService.status.findFirst({
+  //       where: {
+  //         status: {
+  //           contains: status,
+  //         },
+  //       },
+  //     })
+  //     if (getAttendances.students.id != null) {
+  //       await dbService.students.update({
+  //         where: {
+  //           id: getAttendances.students.id,
+  //         },
+  //         data: {
+  //           status: {
+  //             connect: {
+  //               id: getStatus.id,
+  //             },
+  //           },
+  //         },
+  //       })
+  //     } else if (getAttendances.employee.id != null) {
+  //       await dbService.employee.update({
+  //         where: {
+  //           id: getAttendances.students.id,
+  //         },
+  //         data: {
+  //           status: {
+  //             connect: {
+  //               id: getStatus.id,
+  //             },
+  //           },
+  //         },
+  //       })
+  //     }
+  //     const not_attendance = await dbService.not_attendances.update({
+  //       where: {
+  //         id: parseInt(id),
+  //       },
+  //       data: {
+  //         description: description,
+  //         updated_at: new Date(),
+  //       },
+  //     })
+
+  //     return res.status(200).json({
+  //       status: 200,
+  //       message: "Update Success",
+  //       data: not_attendance,
+  //     })
+  //   } catch (error) {
+  //     return res.status(400).json({
+  //       status: 400,
+  //       message: error.message ?? "Error While Update",
+  //       stack: error,
+  //     })
+  //   }
+  // }
+
   async update(req, res) {
-    if (!req.files || !req.files["image"]) throw new Error("File is required");
+    const { id } = req.params
+    const { description, status } = req.body
+    if (!req.files || !req.files["image"])
+      return res.status(400).json({ message: "Image is required" })
+
     try {
-      const { id } = req.params;
-      const { description, status } = req.body;
-      const image = req.files["images"][0].filename;
+      const image = req.files["image"][0].filename
       const getAttendances = await dbService.not_attendances.findFirst({
         where: {
-          id,
+          id: Number(id),
         },
         include: {
           employee: true,
           students: true,
         },
-      });
+      })
       const getStatus = await dbService.status.findFirst({
         where: {
           status: {
             contains: status,
           },
         },
-      });
+      })
       if (getAttendances.students.id != null) {
         await dbService.students.update({
           where: {
@@ -130,7 +200,7 @@ export default class NotAttendanceController {
               },
             },
           },
-        });
+        })
       } else if (getAttendances.employee.id != null) {
         await dbService.employee.update({
           where: {
@@ -143,42 +213,118 @@ export default class NotAttendanceController {
               },
             },
           },
-        });
+        })
       }
       const not_attendance = await dbService.not_attendances.update({
         where: {
-          id,
+          id: parseInt(id),
         },
         data: {
           description: description,
           evidence_location: image ? image : null,
           updated_at: new Date(),
         },
-      });
+      })
 
       return res.status(200).json({
         status: 200,
         message: "Update Success",
         data: not_attendance,
-      });
+      })
+    } catch (error) {
+      console.log("====================================")
+      console.log(error)
+      console.log("====================================")
+      return res.status(400).json({
+        status: 400,
+        message: error.message ?? "Error While Update",
+        stack: error,
+      })
+    }
+  }
+
+  async updateStatus(req, res) {
+    const { id } = req.params
+    const { status_id, description } = req.body
+    try {
+      // if (!req.files || !req.files["image"] || !req.files["image"][0])
+      //   return res.status(400).json({ message: "Image is required" })
+      // console.log("req.files:", req.files)
+      // const image = req.files["image"][0].filename
+      let status: number
+
+      switch (status_id) {
+        case "ALPA":
+          status = 1
+          break
+        case "HADIR":
+          status = 2
+          break
+        case "SAKIT":
+          status = 3
+          break
+        case "IZIN":
+          status = 4
+          break
+        default:
+          break
+      }
+
+      console.log("statusasas", status)
+      console.log("idsasas", parseInt(id))
+      console.log("description", description)
+      // console.log("image", image)
+
+      const getIdStudents = await dbService.students.findFirst({
+        where: {
+          id: parseInt(id),
+        },
+      })
+
+      const updateNotAttendance = await dbService.not_attendances.create({
+        data: {
+          students_id: getIdStudents.id,
+          description: description,
+          // evidence_location: image ? image : null,
+          updated_at: new Date(),
+        },
+      })
+
+      const updateStudent = await dbService.students.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          status_id: status,
+        },
+      })
+
+      return res.status(200).json({
+        status: 200,
+        message: "Update Success",
+        data: {
+          students: updateStudent,
+          details: updateNotAttendance,
+        },
+      })
     } catch (error) {
       return res.status(400).json({
         status: 400,
         message: error.message ?? "Error While Update",
         stack: error,
-      });
+      })
     }
   }
 }
 
 cron.schedule("0 13 * * *", function () {
-  const notAttendanceController = new NotAttendanceController();
-  notAttendanceController.createNotAttendance();
-});
+  const notAttendanceController = new NotAttendanceController()
+  notAttendanceController.createNotAttendance()
+})
 
-cron.schedule("45 10 * * *", function () {
-  const notAttendanceController = new NotAttendanceController();
-  notAttendanceController.updateStudentsEmployee();
-});
+cron.schedule("45 13 * * *", function () {
+  const notAttendanceController = new NotAttendanceController()
+  notAttendanceController.updateStudentsEmployee()
+})
 
-module.exports = NotAttendanceController;
+module.exports = NotAttendanceController

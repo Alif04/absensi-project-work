@@ -61,6 +61,8 @@ export default class AuthController {
         return res.status(400).json({ error: "Password Incorrect" });
       }
 
+      console.log(user.id)
+
       const token = jwt.sign(
         {
           user_id: user.id,

@@ -1,8 +1,4 @@
-[0122/083204.705:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'ambient-light-sensor'.", source:  (0)
-[0122/083204.705:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'bluetooth'.", source:  (0)
-[0122/083204.705:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'gamepad'.", source:  (0)
-[0122/083204.705:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'local-fonts'.", source:  (0)
-[0122/083204.705:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'window-management'.", source:  (0)
-[0122/083204.707:INFO:CONSOLE(0)] "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.", source: https://web.whatsapp.com/ (0)
-[0122/083204.925:INFO:CONSOLE(215)] "Another connection wants to delete database 'wawc'. Closing db now to resume the delete request.", source: https://web.whatsapp.com/serviceworker.js (215)
-[0122/083204.925:INFO:CONSOLE(215)] "Another connection wants to delete database 'wawc'. Closing db now to resume the delete request.", source: https://web.whatsapp.com/serviceworker.js (215)
+[0122/113804.603:ERROR:ssl_client_socket_impl.cc(999)] handshake failed; returned -1, SSL error code 1, net_error -100
+[0122/113804.603:ERROR:ssl_client_socket_impl.cc(999)] handshake failed; returned -1, SSL error code 1, net_error -100
+[0122/113810.394:ERROR:ssl_client_socket_impl.cc(999)] handshake failed; returned -1, SSL error code 1, net_error -100
+[0122/113810.395:ERROR:ssl_client_socket_impl.cc(999)] handshake failed; returned -1, SSL error code 1, net_error -100

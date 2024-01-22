@@ -15,61 +15,61 @@ const dbService = new PrismaClient();
 
 const app = express();
 
-const { Client, LocalAuth } = require('whatsapp-web.js');
+// const { Client, LocalAuth } = require('whatsapp-web.js');
 
-process.title = 'whatsapp-node-api';
-global.client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: { headless: true },
-});
+// process.title = 'whatsapp-node-api';
+// global.client = new Client({
+//   authStrategy: new LocalAuth(),
+//   puppeteer: { headless: true },
+// });
 
-authed = false;
+// authed = false;
 
-let qrCodeSent = false;
+// let qrCodeSent = false;
 
-client.on('qr', (qr) => {
+// client.on('qr', (qr) => {
   
-  // Jika QR code belum dikirim, kirim dan setel status menjadi sudah dikirim
-  if (!qrCodeSent) {
-    console.log('qr');
-    qrcode.generate(qr, { small: true });
-    qrCodeSent = true;
-  }
-});
+//   // Jika QR code belum dikirim, kirim dan setel status menjadi sudah dikirim
+//   if (!qrCodeSent) {
+//     console.log('qr');
+//     qrcode.generate(qr, { small: true });
+//     qrCodeSent = true;
+//   }
+// });
 
-client.on('authenticated', () => {
-  console.log('AUTH!');
-  authed = true;
+// client.on('authenticated', () => {
+//   console.log('AUTH!');
+//   authed = true;
 
-  try {
-    fs.unlinkSync('./components/last.qr');
-  } catch (err) {}
-});
+//   try {
+//     fs.unlinkSync('./components/last.qr');
+//   } catch (err) {}
+// });
 
-client.on('auth_failure', () => {
-  console.log('AUTH Failed !');
-  process.exit();
-});
+// client.on('auth_failure', () => {
+//   console.log('AUTH Failed !');
+//   process.exit();
+// });
 
-client.on('ready', () => {
-  console.log('Client is ready!');
-});
+// client.on('ready', () => {
+//   console.log('Client is ready!');
+// });
 
-client.on('message', async (msg) => {
-  if (config.webhook.enabled) {
-    if (msg.hasMedia) {
-      const attachmentData = await msg.downloadMedia();
-      msg.attachmentData = attachmentData;
-    }
-    axios.post(config.webhook.path, { msg });
-  }
-});
+// client.on('message', async (msg) => {
+//   if (config.webhook.enabled) {
+//     if (msg.hasMedia) {
+//       const attachmentData = await msg.downloadMedia();
+//       msg.attachmentData = attachmentData;
+//     }
+//     axios.post(config.webhook.path, { msg });
+//   }
+// });
 
-client.on('disconnected', () => {
-  console.log('disconnected');
-});
+// client.on('disconnected', () => {
+//   console.log('disconnected');
+// });
 
-client.initialize();
+// client.initialize();
 app.use(cors());
 app.use(express.json());
 app.use('/auth', authRoutes);

@@ -1,0 +1,7 @@
+{
+  "port": 7070,
+  "webhook": {
+    "enabled": false,
+    "path": ""
+  }
+}

@@ -21,7 +21,7 @@ router.patch(
   "/:id",
   middleware,
   upload.fields([{ name: "image", maxCount: 1 }]),
-  notAttendanceController.update
+  notAttendanceController.updateStudents
 )
 router.patch(
   "/status/:id",

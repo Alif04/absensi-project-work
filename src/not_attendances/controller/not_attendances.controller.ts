@@ -164,7 +164,7 @@ export default class NotAttendanceController {
   //   }
   // }
 
-  async update(req, res) {
+  async updateStudents(req, res) {
     const { id } = req.params
     const { description, status } = req.body
     if (!req.files || !req.files["image"])
@@ -172,13 +172,12 @@ export default class NotAttendanceController {
 
     try {
       const image = req.files["image"][0].filename
-      const getAttendances = await dbService.not_attendances.findFirst({
+      const students = await dbService.students.findFirst({
         where: {
-          id: Number(id),
+          id: parseInt(id),
         },
         include: {
-          employee: true,
-          students: true,
+          not_attendance: true,
         },
       })
       const getStatus = await dbService.status.findFirst({
@@ -188,48 +187,86 @@ export default class NotAttendanceController {
           },
         },
       })
-      if (getAttendances.students.id != null) {
-        await dbService.students.update({
-          where: {
-            id: getAttendances.students.id,
-          },
-          data: {
-            status: {
-              connect: {
-                id: getStatus.id,
-              },
-            },
-          },
-        })
-      } else if (getAttendances.employee.id != null) {
-        await dbService.employee.update({
-          where: {
-            id: getAttendances.students.id,
-          },
-          data: {
-            status: {
-              connect: {
-                id: getStatus.id,
-              },
-            },
-          },
-        })
-      }
-      const not_attendance = await dbService.not_attendances.update({
+      if (!students) throw new Error("Student is not found!")
+      if (!status) throw new Error("Status is not found!")
+
+      const studentUpdate = await dbService.students.update({
         where: {
           id: parseInt(id),
         },
         data: {
-          description: description,
-          evidence_location: image ? image : null,
-          updated_at: new Date(),
+          status_id: getStatus.id,
+          not_attendance: {
+            create: {
+              evidence_location: image,
+              description: description,
+            },
+          },
         },
       })
 
       return res.status(200).json({
         status: 200,
         message: "Update Success",
-        data: not_attendance,
+        data: studentUpdate,
+      })
+    } catch (error) {
+      console.log("====================================")
+      console.log(error)
+      console.log("====================================")
+      return res.status(400).json({
+        status: 400,
+        message: error.message ?? "Error While Update",
+        stack: error,
+      })
+    }
+  }
+
+  async updateEmployee(req, res) {
+    const { id } = req.params
+    const { description, status } = req.body
+    if (!req.files || !req.files["image"])
+      return res.status(400).json({ message: "Image is required" })
+
+    try {
+      const image = req.files["image"][0].filename
+      const employees = await dbService.employee.findFirst({
+        where: {
+          id: parseInt(id),
+        },
+        include: {
+          not_attendance: true,
+        },
+      })
+      const getStatus = await dbService.status.findFirst({
+        where: {
+          status: {
+            contains: status,
+          },
+        },
+      })
+      if (!employees) throw new Error("Student is not found!")
+      if (!status) throw new Error("Status is not found!")
+
+      const employeeUpdate = await dbService.employee.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          status_id: getStatus.id,
+          not_attendance: {
+            create: {
+              evidence_location: image,
+              description: description,
+            },
+          },
+        },
+      })
+
+      return res.status(200).json({
+        status: 200,
+        message: "Update Success",
+        data: employeeUpdate,
       })
     } catch (error) {
       console.log("====================================")

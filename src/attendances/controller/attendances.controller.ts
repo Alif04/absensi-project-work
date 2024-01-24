@@ -125,12 +125,20 @@ export default class AttendanceController {
       const skip = +page * +take - +take
       const userRayon = await dbService.rayons.findFirst({
         where: {
-          id: req.user.user_rayon.rayon_id ?? 0,
+          id: req.user?.user_rayon[0]?.rayon_id ?? 0,
         },
       })
-      // console.log("USER RAYON", userRayon);
-      console.log("SEARCH", search)
 
+      const student = await dbService.students.findMany({
+        where: {
+          status: {
+            status: {
+              contains: "HADIR",
+            },
+          },
+          rayon_id: 1,
+        },
+      })
       const where: Prisma.studentsWhereInput = {
         AND: [
           search
@@ -156,15 +164,21 @@ export default class AttendanceController {
                 },
               }
             : undefined,
-          status
+          status === "TIDAK_HADIR"
             ? {
+                status: {
+                  status: {
+                    in: ["ALPA", "SAKIT", "IZIN"],
+                  },
+                },
+              }
+            : {
                 status: {
                   status: {
                     contains: status,
                   },
                 },
-              }
-            : undefined,
+              },
           userRayon?.id
             ? {
                 rayon_id: userRayon.id,
@@ -172,6 +186,9 @@ export default class AttendanceController {
             : undefined,
         ].filter(Boolean),
       }
+      console.log("====================================")
+      console.log("WHERE", where.status)
+      console.log("====================================")
 
       const students = await dbService.students.findMany({
         where,
@@ -245,15 +262,21 @@ export default class AttendanceController {
                 },
               }
             : undefined,
-          status
+          status === "TIDAK_HADIR"
             ? {
+                status: {
+                  status: {
+                    in: ["ALPA", "SAKIT", "IZIN"],
+                  },
+                },
+              }
+            : {
                 status: {
                   status: {
                     contains: status,
                   },
                 },
-              }
-            : undefined,
+              },
         ].filter(Boolean),
       }
 
@@ -267,6 +290,7 @@ export default class AttendanceController {
         include: {
           attendances: true,
           roles: true,
+          status: true,
           user_employee: {
             include: {
               users: {
@@ -327,8 +351,8 @@ export default class AttendanceController {
           break
       }
       let data
-      console.log('student_id', student_id);
-      console.log('status_id', status_id);
+      console.log("student_id", student_id)
+      console.log("status_id", status_id)
       if (student_id) {
         data = {
           students: {
@@ -340,7 +364,7 @@ export default class AttendanceController {
           time: new Date(),
           // evidence_location: image,
         }
-      } 
+      }
       // else if (employee_id) {
       //   data = {
       //     employee: {

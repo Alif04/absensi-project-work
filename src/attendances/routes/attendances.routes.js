@@ -30,6 +30,7 @@ const resizeImage = async (req, res, next) => {
 
 router.get('/student', middleware, attendancesController.getStudent);
 router.get('/employee', middleware, attendancesController.getEmployee);
+router.get('/login/wa', attendancesController.initializeClient);
 router.post(
   '/',
   upload.single('image'),

@@ -5,52 +5,145 @@ const moment = require('moment');
 const { insideCircle } = require("geolocation-utils");
 const jwt = require("jsonwebtoken");
 const dbService = new PrismaClient();
+const { Client} = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const fs = require('fs')
+
 
 class AttendanceController {
   constructor() {
     this.importExcel = this.importExcel.bind(this);
+    this.create = this.create.bind(this);
+    this.sendMessage = this.sendMessage.bind(this);
+    this.isClientInitialized = false;
+    this.client = null
   }
+  async initializeClient() {
+    try {
+      this.client = new Client();
+
+      this.client.on('qr', (qrCode) => {
+        if (!this.isClientInitialized) {
+          console.log('Scan the QR code with your phone:');
+          qrcode.generate(qrCode, { small: true });
+        }
+      });
+
+      // this.client.on('ready', () => {
+      //   console.log('Client is ready!');
+      //   this.saveSession();
+      // });
+
+      this.client.on('message', (message) => {
+        console.log(`Received message from ${message.from}: ${message.body}`);
+      });
+
+      // await this.loadSession();
+
+      await this.client.initialize();
+      this.isClientInitialized = true;
+    } catch (error) {
+      console.error('Error initializing WhatsApp client:', error.message);
+    }
+  }
+
+  // async saveSession() {
+  //   try {
+  //     if (this.client && this.client.isReady) {
+  //       const sessionData = await this.client.getSession();
+  //       fs.writeFileSync('session.json', JSON.stringify(sessionData));
+  //       console.log('Session saved!');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error saving session:', error.message);
+  //   }
+  // }
+
+  // async loadSession() {
+  //   try {
+  //     const sessionExists = fs.existsSync('session.json');
+  //     if (sessionExists) {
+  //       const sessionData = JSON.parse(fs.readFileSync('session.json', 'utf8'));
+  //       await this.client.initialize();
+  //       await this.client.getSession().then((session) => {
+  //         session.restore(sessionData);
+  //         console.log('Session restored!');
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error loading session:', error.message);
+  //   }
+  // }
+
+
+    async sendMessage(phoneNumber, message) {
+      if (!this.isClientInitialized) {
+        await this.initializeClient();
+      }
+  
+        try {
+          await this.client.sendMessage(`${phoneNumber}@c.us`, message);
+          console.log(`Message successfully sent to ${phoneNumber}`);
+        } catch (error) {
+          console.error(`Error sending WhatsApp message: ${error.message}`);
+        }
+    }
+
+
 
   async importExcel(req, res) {
     try {
       const { search, take = 10, page = 1, status, date_from, date_to } = req.query;
       const student = await this.getStudent(req, res);
 
-      const excel = new exceljs.Workbook();
-      const newExcel = excel.addWorksheet('Attendance Sheet');
-      newExcel.addRow([
-        "Name",
-        "Nis",
-        "Status",
-        "Jam Kehadiran"
-      ]);
+      const workbook = new exceljs.Workbook();
+      const worksheet = workbook.addWorksheet('Attendance Sheet');
 
+      // Header row
+      const headerRow = worksheet.addRow(["Name", "Nis", "Status", "Jam Kehadiran"]);
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'dddddd' }, // Warna latar belakang header
+        };
+        cell.font = {
+          bold: true,
+        };
+      });
+
+      // Data rows
       student.data.forEach((item) => {
-        newExcel.addRow([
+        const row = worksheet.addRow([
           item.name,
           item.nis,
           item.status.status,
-          item.attendance[0]?.time ?? 'tidak ada absen'
+          item.attendance[0]?.time || 'tidak ada absen'
         ]);
+        
+        // Tambahkan pemformatan tambahan jika diperlukan
       });
 
+      // Set response headers
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=attendance.xlsx');
-      const buffer = await excel.xlsx.writeBuffer();
-      return res.send(buffer);
 
+      // Write to buffer and send response
+      const buffer = await workbook.xlsx.writeBuffer();
+      return res.send(buffer);
     } catch (error) {
-      console.log(error);
-      return "ERROR";
+      console.error(error);
+      return res.status(500).send("Internal Server Error");
     }
   }
 
   async create(req, res) {
     const { nip, nis, lat, lon } = req.body;
-    if (!req.files || !req.files["image"])
+    if (!req.file)
       return res.status(400).json({ message: "File is required" });
     try {
-      const image = req.files["image"][0].filename;
+      console.log(req.file);
+      const image = req.file.fieldname;
       let data;
       let dataUpdate;
       const radius = 100;
@@ -145,12 +238,8 @@ class AttendanceController {
       ]);
 
       const message = `Halo Bapak/Ibu, ${attendance_name} hadir ke sekolah pada pukul ${attendance.time} dan hadir tepat waktu`;
-
-      await (global).client.sendMessage(whatsapp_number.replace(/\+/g, '') + '@c.us', message).then((response) => {
-        if (response.id.fromMe) {
-          res.send({ status: 'success', message: `Message successfully sent to ${whatsapp_number}` });
-        }
-      });
+      const formattedNumber = whatsapp_number.replace(/^\+/, '');
+      await this.sendMessage(formattedNumber, message);
 
       return res.status(201).json({
         status: 201,
@@ -166,6 +255,7 @@ class AttendanceController {
       });
     }
   }
+
 
   async getStudent(req, res) {
     try {
@@ -256,14 +346,14 @@ class AttendanceController {
         },
       });
 
-      return res.json({
+      return {
         status: 200,
         message: "Get Attendances",
         data: students,
         skip,
         page,
         take: Math.max(+take, 0),
-      });
+      };
     } catch (error) {
       console.log(error);
       return res.status(400).json({

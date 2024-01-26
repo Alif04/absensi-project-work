@@ -1,9 +1,9 @@
-import { PrismaClient } from "@prisma/client"
-import cron from "node-cron"
+const { PrismaClient } = require('@prisma/client');
+const cron = require('node-cron');
 
-const dbService = new PrismaClient()
+const dbService = new PrismaClient();
 
-export default class NotAttendanceController {
+class NotAttendanceController {
   async createNotAttendance() {
     try {
       const student = await dbService.students.findMany({
@@ -93,78 +93,7 @@ export default class NotAttendanceController {
     }
   }
 
-  // async update(req, res) {
-  //   try {
-  //     const { id } = req.params
-  //     const { description, status } = req.body
-  //     const getAttendances = await dbService.not_attendances.findFirst({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       include: {
-  //         employee: true,
-  //         students: true,
-  //       },
-  //     })
-  //     const getStatus = await dbService.status.findFirst({
-  //       where: {
-  //         status: {
-  //           contains: status,
-  //         },
-  //       },
-  //     })
-  //     if (getAttendances.students.id != null) {
-  //       await dbService.students.update({
-  //         where: {
-  //           id: getAttendances.students.id,
-  //         },
-  //         data: {
-  //           status: {
-  //             connect: {
-  //               id: getStatus.id,
-  //             },
-  //           },
-  //         },
-  //       })
-  //     } else if (getAttendances.employee.id != null) {
-  //       await dbService.employee.update({
-  //         where: {
-  //           id: getAttendances.students.id,
-  //         },
-  //         data: {
-  //           status: {
-  //             connect: {
-  //               id: getStatus.id,
-  //             },
-  //           },
-  //         },
-  //       })
-  //     }
-  //     const not_attendance = await dbService.not_attendances.update({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       data: {
-  //         description: description,
-  //         updated_at: new Date(),
-  //       },
-  //     })
-
-  //     return res.status(200).json({
-  //       status: 200,
-  //       message: "Update Success",
-  //       data: not_attendance,
-  //     })
-  //   } catch (error) {
-  //     return res.status(400).json({
-  //       status: 400,
-  //       message: error.message ?? "Error While Update",
-  //       stack: error,
-  //     })
-  //   }
-  // }
-
-  async updateStudents(req, res) {
+  async updateStudent(req, res) {
     const { id } = req.params
     const { description, status } = req.body
     if (!req.files || !req.files["image"])
@@ -288,7 +217,7 @@ export default class NotAttendanceController {
       //   return res.status(400).json({ message: "Image is required" })
       // console.log("req.files:", req.files)
       // const image = req.files["image"][0].filename
-      let status: number
+      let status
 
       switch (status_id) {
         case "ALPA":
@@ -354,14 +283,14 @@ export default class NotAttendanceController {
   }
 }
 
-cron.schedule("0 13 * * *", function () {
-  const notAttendanceController = new NotAttendanceController()
-  notAttendanceController.createNotAttendance()
-})
+cron.schedule('0 13 * * *', function () {
+  const notAttendanceController = new NotAttendanceController();
+  notAttendanceController.createNotAttendance();
+});
 
-cron.schedule("45 13 * * *", function () {
-  const notAttendanceController = new NotAttendanceController()
-  notAttendanceController.updateStudentsEmployee()
-})
+cron.schedule('45 13 * * *', function () {
+  const notAttendanceController = new NotAttendanceController();
+  notAttendanceController.updateStudentsEmployee();
+});
 
-module.exports = NotAttendanceController
+module.exports = NotAttendanceController;

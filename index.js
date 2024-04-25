@@ -17,6 +17,7 @@ app.use('/auth', authRoutes);
 app.use('/attendance', attendancesRoutes);
 app.use('/not_attendance', notAttendanceRoutes);
 app.use('/dummy', dummyRoutes);
+app.use('/uploads', express.static('uploads'));
 app.use(function (req, res, next) {
   console.log(req.method + ' : ' + req.path);
   next();

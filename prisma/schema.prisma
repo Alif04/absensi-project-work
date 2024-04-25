@@ -124,6 +124,8 @@ model attendances {
   employee_id Int?
 
   time              String
+  longitude         String @default("") @db.VarChar(250)
+  latitude          String @default("") @db.VarChar(250)
   evidence_location String @db.VarChar(50)
 
   created_at DateTime  @default(now())

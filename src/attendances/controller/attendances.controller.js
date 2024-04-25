@@ -17,7 +17,13 @@ class AttendanceController {
   }
   async initializeClient() {
     try {
-      this.client = new Client();
+      this.client = new Client({
+        webVersionCache: {
+          type: 'remote',
+          remotePath:
+            'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+        },
+      });
 
       this.client.on('qr', (qrCode) => {
         if (!this.isClientInitialized) {
@@ -127,12 +133,12 @@ class AttendanceController {
     if (!req.file) return res.status(400).json({ message: 'File is required' });
     try {
       console.log(req.file);
-      const image = req.file.fieldname;
+      const image = req.file.originalname;
       let data;
       let dataUpdate;
       const radius = 100;
-      const lat1 = -6.6453129;
-      const lon1 = 106.8435759;
+      const lat1 = -6.6454088;
+      const lon1 = 106.8432584;
       const location1 = { lat: Number(lat), lon: Number(lon) };
       const location2 = { lat: Number(lat), lon: Number(lon) };
       const circle = insideCircle(location2, location1, radius);
@@ -167,6 +173,8 @@ class AttendanceController {
               id: students.id,
             },
           },
+          latitude: lat,
+          longitude: lon,
           time: new Date(Date.now()),
           evidence_location: image,
         };
@@ -226,7 +234,8 @@ class AttendanceController {
 
       const message = `Halo Bapak/Ibu, ${attendance_name} hadir ke sekolah pada pukul ${attendance.time} dan hadir tepat waktu`;
       const formattedNumber = whatsapp_number.replace(/^\+/, '');
-      await this.sendMessage(formattedNumber, message);
+      // return 'success';
+      // await this.sendMessage(formattedNumber, message);
 
       return res.status(201).json({
         status: 201,

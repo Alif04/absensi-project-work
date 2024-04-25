@@ -32,7 +32,7 @@ router.get('/student', middleware, attendancesController.getStudent);
 router.get('/employee', middleware, attendancesController.getEmployee);
 router.get('/login/wa', attendancesController.initializeClient);
 router.post(
-  '/',
+  '',
   // upload.fields([{ name: 'image', maxCount: 1 }]),
   upload.single('image'),
   middleware,

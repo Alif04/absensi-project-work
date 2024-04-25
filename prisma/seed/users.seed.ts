@@ -14,7 +14,7 @@ export async function UsersSeed() {
         [
             {
                 username: "admin",
-                password: await hash("password", 12),
+                password: await hash("  ", 12),
                 role_id: role[0].id
             },
             {

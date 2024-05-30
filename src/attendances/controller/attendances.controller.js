@@ -20,7 +20,13 @@ class AttendanceController {
   }
   async initializeClient() {
     try {
-      this.client = new Client();
+      this.client = new Client({
+        webVersionCache: {
+          type: "remote",
+          remotePath:
+            "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
+        },
+      });;
 
       this.client.on('qr', (qrCode) => {
         if (!this.isClientInitialized) {
@@ -229,7 +235,7 @@ class AttendanceController {
         };
       }
 
-      const [attendance, student = null, employee = null] = await dbService.$transaction([
+      const [attendance, student, employee] = await dbService.$transaction([
         dbService.attendances.create({
           data,
         }),
@@ -239,7 +245,7 @@ class AttendanceController {
 
       const message = `Halo Bapak/Ibu, ${attendance_name} hadir ke sekolah pada pukul ${attendance.time} dan hadir tepat waktu`;
       const formattedNumber = whatsapp_number.replace(/^\+/, '');
-      await this.sendMessage(formattedNumber, message);
+      // await this.sendMessage(formattedNumber, message);
 
       return res.status(201).json({
         status: 201,

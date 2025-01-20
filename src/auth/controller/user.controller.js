@@ -46,14 +46,15 @@ class AuthController {
       let user;
 
       if (usersWithUserRayon.length > 0) {
-        user = usersWithUserRayon[0]; // Ambil salah satu user dengan user_rayon
+        user = usersWithUserRayon[0];
       } else if (usersWithoutUserRayon.length > 0) {
-        user = usersWithoutUserRayon[0]; // Ambil salah satu user tanpa user_rayon
+        user = usersWithoutUserRayon[0]; 
       }
 
       if (!user) {
         throw new Error("User not found!");
       }
+      
 
       // Periksa kata sandi
       const match_password = await bcrypt.compare(password, user.password);
